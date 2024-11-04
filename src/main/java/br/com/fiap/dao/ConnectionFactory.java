@@ -23,31 +23,34 @@ public class ConnectionFactory {
     }
 
     public static ConnectionFactory getInstance() {
-        ConnectionFactory result = instance;
-        if(result != null) {
-            return result;
+        if (instance != null) {
+            return instance;
         }
         Properties prop = new Properties();
-        FileInputStream file = null;
-        try{
-            file = new FileInputStream("./src/main/resources/application.properties");
+        try (FileInputStream file = new FileInputStream("./src/main/resources/application.properties")) {
             prop.load(file);
             String url = prop.getProperty("datasource.url");
             String user = prop.getProperty("datasource.username");
             String pass = prop.getProperty("datasource.password");
-            String driver  = prop.getProperty("datasource.driver-class-name");
-            file.close();
-            if (instance == null) {
-                instance = new ConnectionFactory(url, user, pass, driver);
+            String driver = prop.getProperty("datasource.driver-class-name");
+
+            // Checagem de valores nulos ou em branco para cada propriedade
+            if (url == null || url.isEmpty() || user == null || user.isEmpty() ||
+                    pass == null || pass.isEmpty() || driver == null || driver.isEmpty()) {
+                throw new IllegalArgumentException("Alguma das propriedades está nula ou em branco no arquivo application.properties");
             }
-            return instance;
-        }catch (FileNotFoundException e) {
-            System.out.println("Erro (FileNotFoundException): " + e.getMessage());
-        }catch (IOException e) {
-            System.out.println("Erro (IOException): " + e.getMessage());
+
+            instance = new ConnectionFactory(url, user, pass, driver);
+        } catch (FileNotFoundException e) {
+            System.out.println("Erro (FileNotFoundException): Arquivo application.properties não encontrado. " + e.getMessage());
+        } catch (IOException e) {
+            System.out.println("Erro (IOException): Falha ao ler o arquivo application.properties. " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Erro: " + e.getMessage());
         }
-        return null;
+        return instance;
     }
+
 
     public Connection getConexao() {
         try{
